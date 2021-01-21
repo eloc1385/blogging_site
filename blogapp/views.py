@@ -6,6 +6,6 @@ from .models import Post
 
 
 def post_list(request):
-    posts = Post.objects.all().order_by('-published_date')
+    posts = Post.objects.filter(published_date__lte=timezone.now()).order_by('-published_date')
     stuff_for_frontend = {'posts': posts}
     return render(request, 'blogapp/post_list.html', stuff_for_frontend)
