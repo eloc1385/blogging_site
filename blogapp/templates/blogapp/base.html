@@ -15,6 +15,7 @@
     {% if user.is_authenticated %}
         <a href="{% url 'post_draft_list' %}" class="top-menu"><i class="fa fa-file fa-2x" aria-hidden="true"></i></a>
         <a href="{% url 'post_new'%}" class="top-menu"><i class="fa fa-plus-square fa-2x" aria-hidden="true"></i></i></a>
+        <p class="top-menu">Hello, {{user.username}} <small>(<a href="{% url 'logout' %}">Log Out</a>)</small></p>
     {% else %}
         <a href="{% url 'login'%}" class="top-menu"><i class="fa fa-sign-in fa-2x" aria-hidden="true"></i></a>
     {% endif %}
