@@ -1,12 +1,14 @@
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
-from .models import Post
-from .forms import PostForm, CommentForm
+
+from .forms import PostForm, CommentForm, UserForm
+from .models import Post, Comment
 
 
-
+# Create your views here.
 def post_list(request):
     posts = Post.objects.filter(published_date__lte=timezone.now()).order_by('-published_date')
     stuff_for_frontend = {'posts': posts}
@@ -14,21 +16,21 @@ def post_list(request):
 
 
 def post_detail(request, pk):
-    post = get_object_or_404(Post, pk=pk) #If it doesn't exist, throws a 404 error
+    post = get_object_or_404(Post, pk=pk)
     stuff_for_frontend = {'post': post}
     return render(request, 'blogapp/post_detail.html', stuff_for_frontend)
 
+
 @login_required
 def post_new(request):
-    if(request.method == 'POST'):
+    if request.method == 'POST':
         form = PostForm(request.POST)
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
             post.save()
             return redirect('post_detail', pk=post.pk)
-
-    else:        
+    else:
         form = PostForm()
         stuff_for_frontend = {'form': form}
     return render(request, 'blogapp/post_edit.html', stuff_for_frontend)
@@ -37,7 +39,10 @@ def post_new(request):
 def post_edit(request, pk):
     post = get_object_or_404(Post, pk=pk)
     if request.method == 'POST':
+
+        # updating an existing form
         form = PostForm(request.POST, instance=post)
+
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
@@ -45,7 +50,7 @@ def post_edit(request, pk):
             return redirect('post_detail', pk=post.pk)
     else:
         form = PostForm(instance=post)
-        stuff_for_frontend = {'form':form, 'post':post}
+        stuff_for_frontend = {'form': form, 'post': post}
     return render(request, 'blogapp/post_edit.html', stuff_for_frontend)
 
 @login_required
@@ -58,8 +63,15 @@ def post_draft_list(request):
 def post_publish(request, pk):
     post = get_object_or_404(Post, pk=pk)
     post.publish()
-    return redirect('post_detail',pk=pk)
+    return redirect('post_detail', pk=pk)
 
+@login_required
+def post_delete(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    post.delete()
+    return redirect('/', pk=post.pk)
+
+@login_required
 def add_comment_to_post(request, pk):
     post = get_object_or_404(Post, pk=pk)
     if request.method == 'POST':
@@ -71,6 +83,31 @@ def add_comment_to_post(request, pk):
             comment.save()
             return redirect('post_detail', pk=post.pk)
     else:
-        form = CommentForm()
+       form = CommentForm()
     return render(request, 'blogapp/add_comment_to_post.html', {'form': form})
 
+
+@login_required
+def comment_remove(request, pk):
+    comment = get_object_or_404(Comment, pk=pk)
+    comment.delete()
+    return redirect('post_detail', pk=comment.post.pk)
+
+
+@login_required
+def comment_approve(request, pk):
+    # mydjangosite.com/comment/2/approve --> the 2nd comment will get approved
+    comment = get_object_or_404(Comment, pk=pk)
+    comment.approve()
+    return redirect('post_detail', pk=comment.post.pk)
+
+def signup(request):
+    if request.method == 'POST':
+        form = UserForm(request.POST)
+        if form.is_valid():
+            new_user = User.objects.create_user(**form.cleaned_data)
+            login(request, new_user)
+            return redirect('/')
+    else:
+        form = UserForm()
+    return render(request, 'blogapp/signup.html', {'form': form})
